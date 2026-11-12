@@ -1,0 +1,6 @@
+{
+  "name": "finalrex",
+  "description": "Log session work as tasks on a FinalRex board and write Daily Report notes.",
+  "version": "0.1.0",
+  "keywords": ["finalrex", "work-log", "daily-report"]
+}

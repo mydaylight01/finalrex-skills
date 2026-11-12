@@ -1,0 +1,17 @@
+{
+  "name": "finalrex-skills",
+  "owner": {
+    "name": "finalrex-skills"
+  },
+  "metadata": {
+    "description": "Claude Code skills for working with FinalRex boards and notes."
+  },
+  "plugins": [
+    {
+      "name": "finalrex",
+      "source": "./plugins/finalrex",
+      "description": "Log session work as tasks on a FinalRex board and write Daily Report notes.",
+      "version": "0.1.0"
+    }
+  ]
+}
