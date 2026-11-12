@@ -1,6 +1,14 @@
 {
   "name": "finalrex",
-  "description": "Log session work as tasks on a FinalRex board and write Daily Report notes.",
-  "version": "0.1.0",
-  "keywords": ["finalrex", "work-log", "daily-report"]
+  "description": "FinalRex skills: daily report, weekly/monthly summary, standup, plan to tasks and read-only status on a FinalRex board.",
+  "version": "0.2.0",
+  "keywords": [
+    "finalrex",
+    "work-log",
+    "daily-report",
+    "weekly-report",
+    "standup",
+    "planning",
+    "status"
+  ]
 }
