@@ -59,7 +59,7 @@ Call `list_workspaces`. Ask "จะเขียนลง workspace ไหน?" w
 Call `list_boards` for that workspace. Ask "งานเก็บอยู่ใน board ไหน?" with up to 4 boards (put one named "Master Plan" first). Save `board: { id, name }`.
 
 ### Step 3 — Rules note
-Call `list_notes` for the workspace and for the board (`boardId`). Candidates = notes with a title and no `parentId` (workspace notes and board notes). Ask "โน้ตกลางที่เก็บกฎ / Standard คือโน้ตไหน?":
+Call `list_notes` with `workspace` (slug) alone, then with `workspace` and `boardId` for the board (on an all-workspaces connection `list_notes` and `create_note` fail without `workspace`). Candidates = notes with a title and no `parentId` (workspace notes and board notes). Ask "โน้ตกลางที่เก็บกฎ / Standard คือโน้ตไหน?":
 - up to 3 candidates (put one named like "Work Log Reports" first)
 - "สร้างโน้ตใหม่"
 
@@ -102,7 +102,7 @@ Write `~/.claude/finalrex-report.json` with the answers, keeping keys you did no
 
 ## 4. Find or create the note
 
-Board notes of the saved board (create the Monthly with `create_note` + `boardId`, every child with `parentId`, never duplicate one that exists):
+Board notes of the saved board (create the Monthly with `create_note` + `workspace` + `boardId`, every child with `workspace` + `parentId`, never duplicate one that exists):
 
 ```
 <board>
@@ -112,9 +112,9 @@ Board notes of the saved board (create the Monthly with `create_note` + `boardId
          └─ Daily Report: <displayName>
 ```
 
-- Use `list_notes` with `boardId` to see the tree; match by title and parent. Ignore untitled notes.
+- Use `list_notes` with `workspace` (slug) and `boardId` to see the tree; match by title and parent. Ignore untitled notes.
 - If the work spans several days, split it: each piece goes into the Daily note of the day it was done.
-- Several sessions may write at once. Call `list_notes` again right before every `create_note` and reuse a note that appeared meanwhile. After writing, list once more: if the same parent now has two notes with the same title, merge the bodies into the older one and `delete_note` the newer one.
+- Several sessions may write at once. Call `list_notes` (with `workspace` and `boardId`) again right before every `create_note` and reuse a note that appeared meanwhile. After writing, list once more: if the same parent now has two notes with the same title, merge the bodies into the older one and `delete_note` the newer one.
 
 ## 5. Write the body
 
