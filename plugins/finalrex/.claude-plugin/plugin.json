@@ -1,7 +1,7 @@
 {
   "name": "finalrex",
-  "description": "FinalRex skills: daily report, weekly/monthly summary, standup, plan to tasks and read-only status on a FinalRex board.",
-  "version": "0.2.1",
+  "description": "FinalRex skills: daily report, weekly/monthly summary, standup, plan to tasks, read-only status, Book pages and Atlas maps on FinalRex.",
+  "version": "0.3.0",
   "keywords": [
     "finalrex",
     "work-log",
@@ -9,6 +9,10 @@
     "weekly-report",
     "standup",
     "planning",
-    "status"
+    "status",
+    "book",
+    "knowledge-base",
+    "atlas",
+    "mind-map"
   ]
 }

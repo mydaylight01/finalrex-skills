@@ -4,14 +4,14 @@
     "name": "finalrex-skills"
   },
   "metadata": {
-    "description": "Claude Code skills for working with FinalRex boards and notes."
+    "description": "Claude Code skills for working with FinalRex boards, notes, books and atlases."
   },
   "plugins": [
     {
       "name": "finalrex",
       "source": "./plugins/finalrex",
-      "description": "FinalRex skills: daily report, weekly/monthly summary, standup, plan to tasks and read-only status on a FinalRex board.",
-      "version": "0.2.1"
+      "description": "FinalRex skills: daily report, weekly/monthly summary, standup, plan to tasks, read-only status, Book pages and Atlas maps on FinalRex.",
+      "version": "0.3.0"
     }
   ]
 }

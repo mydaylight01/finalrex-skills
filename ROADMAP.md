@@ -7,6 +7,8 @@
 | `finalrex-standup` | Done (0.2.0) | Records a standup: yesterday / today / blockers per person, task updates, "Standup: dd/mm/yyyy" note. |
 | `finalrex-plan` | Done (0.2.0) | Turns a request or spec into parent tasks and subtasks, without duplicates. |
 | `finalrex-status` | Done (0.2.0) | Read-only status: open, overdue, stuck, Hold and open-risk tasks for me / a person / a project / the team. |
+| `finalrex-book` | Done (0.3.0) | Writes Book pages as drafts from a topic, a file or the conversation, without duplicates. |
+| `finalrex-atlas` | Done (0.3.0) | Lays a plan out on an Atlas: cards, links and references to existing pages, notes and tasks. |
 | `finalrex-kpi` | On hold | Defines and runs KPIs for a board. |
 
 ## finalrex-kpi (on hold)
