@@ -88,10 +88,12 @@ claude plugin list
 | `finalrex-standup` | Records a standup: yesterday / today / blockers per person, updates tasks (blockers become Open risk tasks) and writes the "Standup: dd/mm/yyyy" note. Say `/finalrex-standup` or "บันทึก standup". |
 | `finalrex-plan` | Turns a request or spec into parent tasks and subtasks, checking for duplicates first. Say `/finalrex-plan` or "แตก task". |
 | `finalrex-status` | Read-only: open, overdue, stuck, Hold and open-risk tasks for you, a person, a project or the team. Say `/finalrex-status` or "งานฉันค้างอะไร". |
+| `finalrex-book` | Turns a topic, a file or the conversation into Book pages (drafts, never published), updating existing pages instead of duplicating. Needs FinalRex Brain to create a book. Say `/finalrex-book` or "เขียนลง book". |
+| `finalrex-atlas` | Lays a plan out on an Atlas: cards, links, and existing book pages / notes / tasks pinned as references, without overlaps. The atlas must exist (create it in the web app). Needs FinalRex Brain. Say `/finalrex-atlas` or "วาง atlas". |
 | `finalrex-kpi` | Planned (on hold until the FinalRex MCP has KPI tools). See [ROADMAP.md](ROADMAP.md). |
 
-Every skill reads the rules note on your board first; its rules win over the skill text.
+The board skills (report, summary, standup, plan, status) read the rules note on your board first; its rules win over the skill text.
 Skills that write show a dry run and ask once before writing.
 
 The first run asks for your workspace, board, rules note, format and name.
-Your settings are saved in `~/.claude/finalrex-report.json` on your machine and shared by all the skills. They are not part of this repo.
+Your settings are saved in `~/.claude/finalrex-report.json` on your machine and shared by all the skills (`finalrex-book` and `finalrex-atlas` add the last book / atlas you chose). They are not part of this repo.
