@@ -61,21 +61,34 @@ Note tree of the board (see `finalrex-report`):
 
 ```
 Monthly: MM/YYYY                ← team summary Monthly (body)
-├─ Monthly Report: <name>
-└─ Weekly: dd/mm - dd/mm        ← team summary Weekly (body)
-   ├─ Weekly Report: <name>
-   └─ Daily: dd/mm/yyyy › Daily Report: <name>
+├─ Weekly: dd/mm - dd/mm        ← team summary Weekly (body)
+│  ├─ Daily: dd/mm/yyyy › Daily Report: <name>
+│  └─ Weekly Report: <name>
+└─ Monthly Reports              ← group note, empty body
+   └─ Monthly Report: <name>
 ```
 
+"Monthly Report: <name>" notes always sit under the `Monthly Reports` group of their month, never directly under the Monthly. The rules note's FOR AI section wins if it says otherwise.
+
+**Order of sibling notes** (every level; never leave a note wherever `create_note` put it):
+
+1. Group notes (notes that hold notes: Monthly, Weekly, Daily, Monthly Reports) come first, by date ascending: Monthly by month, Weekly by start day, Daily by day. A group without a date (`Monthly Reports`) comes after the dated groups.
+2. Other notes (Weekly Report, Monthly Report, Daily Report, Standup) come after all groups, A→Z by title.
+
+Steps:
+
 1. Match each target note by title **and** parent. Existing → update it; missing → create it (`create_note` with `boardId` for a Monthly, `parentId` for children). Never create a second note with the same title under the same parent.
+   - A Monthly Report needs the month's `Monthly Reports` group: reuse it, or create it (empty body) before the report.
+   - A "Monthly Report: <name>" found directly under the Monthly (old layout) → `move_note` it into the group; never re-create it.
 2. **Confirm once.** Show a short list and ask "เขียนตามนี้ไหม?":
    ```
    สร้าง: Monthly: 11/2026 › Weekly: 09/11 - 15/11 › Weekly Report: Pac (5 แถว)
+   สร้าง: Monthly: 11/2026 › Monthly Reports › Monthly Report: Pac (8 แถว)
    อัพเดต: Weekly: 09/11 - 15/11 (สรุปทีม 18 แถว), Weekly Report: Gas (+2 แถว แก้ 3)
    ```
    Do not write before the yes. The user may ask to see a table first.
-3. **Write.** For an existing note: `get_note` for the current `version` and body, merge (update the row of the same task in place, add new rows, keep the sort, keep rows of other tasks and any text outside the table), then `update_note` with the whole body. For a new note: `list_notes` again right before `create_note` and reuse a note that appeared meanwhile.
-4. **Verify.** `list_notes` once more: if a parent now has two notes with the same title, merge the bodies into the older one and `delete_note` the newer one.
+3. **Write.** For an existing note: `get_note` for the current `version` and body, merge (update the row of the same task in place, add new rows, keep the sort, keep rows of other tasks and any text outside the table), then `update_note` with the whole body. For a new note: `list_notes` again right before `create_note` and reuse a note that appeared meanwhile. `create_note` puts a note last, so place every new or moved note right away: `move_note` with `afterNoteId` = the sibling it follows by the order above (`version` from the create result or `get_note`).
+4. **Verify.** `list_notes` once more for every parent you touched: if a parent now has two notes with the same title, merge the bodies into the older one and `delete_note` the newer one; if siblings are out of the order above, `move_note` them into place.
 
 **Always:** never write work into the rules note. No secrets, credentials, tokens or customer personal data (names, emails, phones) in notes.
 
