@@ -24,6 +24,12 @@ Settings are saved in `~/.claude/finalrex-report.json` (outside the skill folder
 
 Ask every question with the AskUserQuestion tool, in Thai. It adds an "Other" box on its own, so the user can always type a free answer.
 
+## Names, not ids
+
+- In chat, AskUserQuestion questions and options, confirmations, dry-run summaries and reports, refer to workspaces, boards, views, tasks, notes, books, pages, atlases, nodes and people by name or title (plus the url a tool returns when linking). Never show raw ids / UUIDs unless the user asks for them.
+- Before every `mcp__finalrex__*` call, write one short Thai line saying what it will do in names and counts, e.g. "จะอ่านงาน 20 รายการจากบอร์ด Master Plan" or "จะสร้างหน้า 3 หน้าในหนังสือ คู่มือทีม", so the user understands the permission prompt, which shows raw ids.
+- Tool calls still pass ids / UUIDs exactly as before. If a name is not known yet, take it from an earlier `list_*` / `get_*` result (look it up first if cheap) instead of printing the id.
+
 ## 0. Connect FinalRex (only if it is missing)
 
 Look for tools named `mcp__finalrex__*` (search with ToolSearch for "+finalrex" if they are deferred; wait for it if the server is still connecting). If none exist, stop and tell the user, in Thai, to connect it, then run the skill again:
