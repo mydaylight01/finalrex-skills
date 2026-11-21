@@ -22,7 +22,13 @@ Settings are saved in `~/.claude/finalrex-report.json` (outside the skill folder
 
 `format.mode` is `default` (the rules note's formats) or `custom` (`format.custom` holds the user's bullet points). `userId` is the user's member id, filled in section 3.
 
-Ask every question with the AskUserQuestion tool, in Thai. It adds an "Other" box on its own, so the user can always type a free answer.
+Ask every question with the AskUserQuestion tool, in Thai. Quoted English strings below are meant to be shown to the user: translate them to Thai when you say them. It adds an "Other" box on its own, so the user can always type a free answer.
+
+## Names, not ids
+
+- In chat, AskUserQuestion questions and options, confirmations, dry-run summaries and reports, refer to workspaces, boards, views, tasks, notes, books, pages, atlases, nodes and people by name or title (plus the url a tool returns when linking). Never show raw ids / UUIDs unless the user asks for them.
+- Before every `mcp__finalrex__*` call, write one short Thai line saying what it will do in names and counts, e.g. "Will read 20 tasks from the board Master Plan" or "Will create 3 pages in the book Team Handbook", so the user understands the permission prompt, which shows raw ids.
+- Tool calls still pass ids / UUIDs exactly as before. If a name is not known yet, take it from an earlier `list_*` / `get_*` result (look it up first if cheap) instead of printing the id.
 
 ## 0. Connect FinalRex (only if it is missing)
 
@@ -43,40 +49,40 @@ Once connected, call `whoami`. Its display name is the default for step 5 (the n
 Read `~/.claude/finalrex-report.json`.
 
 **File exists and is complete** → ask ONE question only:
-- "ทำแบบเดิม" — description: `<workspace name> › board <board name> › <root note title> › format <ที่มีอยู่ | กำหนดเอง> › ชื่อ <displayName>`
-- "ตั้งค่าใหม่"
+- "Same as before" — description: `<workspace name> › board <board name> › <root note title> › format <existing | custom> › name <displayName>`
+- "Set up again"
 
-"ทำแบบเดิม" → go to section 2. "ตั้งค่าใหม่" → run steps 1-5 below, then save.
+"Same as before" → go to section 2. "Set up again" → run steps 1-5 below, then save.
 
 **File complete except `board`** → run step 2 only, save, continue (no "same as before?" question this run).
 
 **File missing or broken** (including no `displayName`) → run steps 1-5, then save.
 
 ### Step 1 — Workspace
-Call `list_workspaces`. Ask "จะเขียนลง workspace ไหน?" with up to 4 workspaces as options (label = name). With only one workspace, still ask, so the user confirms it.
+Call `list_workspaces`. Ask "Which workspace should I write to?" with up to 4 workspaces as options (label = name). With only one workspace, still ask, so the user confirms it.
 
 ### Step 2 — Board
-Call `list_boards` for that workspace. Ask "งานเก็บอยู่ใน board ไหน?" with up to 4 boards (put one named "Master Plan" first). Save `board: { id, name }`.
+Call `list_boards` for that workspace. Ask "Which board holds the work?" with up to 4 boards (put one named "Master Plan" first). Save `board: { id, name }`.
 
 ### Step 3 — Rules note
-Call `list_notes` with `workspace` (slug) alone, then with `workspace` and `boardId` for the board (on an all-workspaces connection `list_notes` and `create_note` fail without `workspace`). Candidates = notes with a title and no `parentId` (workspace notes and board notes). Ask "โน้ตกลางที่เก็บกฎ / Standard คือโน้ตไหน?":
+Call `list_notes` with `workspace` (slug) alone, then with `workspace` and `boardId` for the board (on an all-workspaces connection `list_notes` and `create_note` fail without `workspace`). Candidates = notes with a title and no `parentId` (workspace notes and board notes). Ask "Which note is the central note that holds the rules / Standard?":
 - up to 3 candidates (put one named like "Work Log Reports" first)
-- "สร้างโน้ตใหม่"
+- "Create a new note"
 
-"สร้างโน้ตใหม่" (or a typed name in Other that matches no note) → if no name was typed, ask for the name in chat, default `Work Log Reports`. Create it with `create_note` (workspace, title, empty body; step 4 fills the body). Save it as `rootNote`.
+"Create a new note" (or a typed name in Other that matches no note) → if no name was typed, ask for the name in chat, default `Work Log Reports`. Create it with `create_note` (workspace, title, empty body; step 4 fills the body). Save it as `rootNote`.
 
 ### Step 4 — Format
-Ask "จะใช้ format แบบไหน?":
-- "ใช้แบบที่มีอยู่" — description: "ตามกฎในโน้ตกลาง (Daily Report: Task / Project / Status / Progress / สิ่งที่ทำวันนั้น)"
-- "สร้างเองใหม่" — description: "พิมพ์ bullet point ว่าอยากให้รายงานมีอะไรบ้าง"
+Ask "Which format should I use?":
+- "Use the existing one" — description: "Follow the rules in the central note (Daily Report: Task / Project / Status / Progress / What was done that day)"
+- "Write my own" — description: "Type bullet points for what the report should contain"
 
-"สร้างเองใหม่" → ask in chat: "พิมพ์ bullet point ของ format ที่ต้องการ เช่น หัวข้อ, คอลัมน์, ภาษา, สิ่งที่ต้องมี/ห้ามมี". Save the bullets as-is in `format.custom`. Show a short sample report built from them and ask for OK before saving. The rules note still wins where they conflict.
+"Write my own" → ask in chat: "Type bullet points for the format you want, e.g. headings, columns, language, what must / must not be included". Save the bullets as-is in `format.custom`. Show a short sample report built from them and ask for OK before saving. The rules note still wins where they conflict.
 
 If the rules note was just created (step 3), write the chosen format into its body as a "FOR AI" block, so the whole team shares one format. Do not overwrite the body of an existing rules note.
 
 ### Step 5 — Name
-Ask "ชื่อที่จะใช้ใน Daily Report (ชื่อโน้ตจะเป็น `Daily Report: <ชื่อ>`)":
-- the `whoami` display name — description: "ชื่อจากบัญชี FinalRex"
+Ask "Name to use in the Daily Report (the note title will be `Daily Report: <name>`)":
+- the `whoami` display name — description: "name from the FinalRex account"
 - the saved `displayName`, if there is one and it differs
 - the user types another name in Other
 
@@ -96,7 +102,7 @@ Write `~/.claude/finalrex-report.json` with the answers, keeping keys you did no
 3. **Find existing tasks** for each piece: `list_tasks` (board, `compact: true`, `filter` on title `contains`, or `parentId`) and/or `search` (kinds `task`). Update an existing task; create only when none matches.
 4. **Plan** creates/updates per the rules note: feature = parent task, pieces = subtasks (`parentId`, one level), title with no "(Project)" suffix, `assigneeIds: [userId]`, `startAt` / `dueAt` from real work days, fields `Project`, `Progress`, `Status` (from %), `Remark`. Project must be an existing option; if none fits, ask the user before anything else, never add an option yourself. Open risks / things left to do → their own task with Status Open (under the related feature) and the detail in Remark.
 5. **Dry run.** `batch_tasks` with `dryRun: true`. Fix any error.
-6. **Confirm once.** Show the user a short list (create / update: title, Status, Progress, parent) and ask "ลง task ตามนี้ไหม?". Do not write before the yes.
+6. **Confirm once.** Show the user a short list (create / update: title, Status, Progress, parent) and ask "Log these tasks?". Do not write before the yes.
 7. **Run** `batch_tasks` for real (create ops use `ref` so subtasks can point at a new parent). Then `list_tasks` again to verify; if the batch stopped partway, report which ops were applied and fix the rest.
 8. **Standards.** A new reusable rule from this session → append it to the Standard section of the rules note, only if it is not already there (`get_note` for the current `version`, then `update_note` with the full body plus the new line). Never write work into the rules note.
 
@@ -121,7 +127,7 @@ Board notes of the saved board (create the Monthly with `create_note` + `workspa
 Daily Report = the table from the rules note:
 
 ```markdown
-| Task | Project | Status | Progress | สิ่งที่ทำวันนั้น |
+| Task | Project | Status | Progress | What was done that day |
 |---|---|---|---|---|
 | <task title exactly as on the board> | <Project> | <Status> | <N>% | <what was done that day, short> |
 ```
@@ -141,18 +147,18 @@ Daily Report = the table from the rules note:
 Short, in Thai. Shape:
 
 ```
-ลง FinalRex แล้ว
+Logged to FinalRex
 
 Task (board <board name>)
-- สร้าง: <title> — <Status> <N>%
-- อัพเดต: <title> — <Status> <N>%
+- Created: <title> — <Status> <N>%
+- Updated: <title> — <Status> <N>%
 
 Note
 - Monthly: 11/2026 › Weekly: 09/11 - 15/11 › Daily: 13/11/2026 › **Daily Report: <displayName>**
 
-ข้าม: <anything skipped and why, e.g. Weekly ยังไม่ถึงเวลา, Project ไม่มีตัวเลือก>
+Skipped: <anything skipped and why, e.g. Weekly not due yet, Project has no matching option>
 
-ต้องการดูรายละเอียดที่เขียนไหม?
+Want to see the details I wrote?
 ```
 
 Only if they say yes, show the content and point out any % you estimated.

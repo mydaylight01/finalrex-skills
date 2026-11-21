@@ -7,7 +7,13 @@ description: Record a standup meeting on the configured FinalRex board (e.g. Mas
 
 Turn standup notes into task updates and one "Standup: dd/mm/yyyy" note.
 
-Settings: `~/.claude/finalrex-report.json` (shared with `finalrex-report`). Ask every question with AskUserQuestion, in Thai. Talk to the user in Thai, short.
+Settings: `~/.claude/finalrex-report.json` (shared with `finalrex-report`). Ask every question with AskUserQuestion, in Thai. Talk to the user in Thai, short. Quoted English strings below are meant to be shown to the user: translate them to Thai when you say them.
+
+## Names, not ids
+
+- In chat, AskUserQuestion questions and options, confirmations, dry-run summaries and reports, refer to workspaces, boards, views, tasks, notes, books, pages, atlases, nodes and people by name or title (plus the url a tool returns when linking). Never show raw ids / UUIDs unless the user asks for them.
+- Before every `mcp__finalrex__*` call, write one short Thai line saying what it will do in names and counts, e.g. "Will read 20 tasks from the board Master Plan" or "Will create 3 pages in the book Team Handbook", so the user understands the permission prompt, which shows raw ids.
+- Tool calls still pass ids / UUIDs exactly as before. If a name is not known yet, take it from an earlier `list_*` / `get_*` result (look it up first if cheap) instead of printing the id.
 
 ## 0. Connect FinalRex
 
@@ -26,14 +32,14 @@ Read `~/.claude/finalrex-report.json`. Needed: `workspace`, `board`, `rootNote`,
 
 ## 3. Get the standup
 
-- Input = notes or a transcript the user pasted (or a file path they gave). If there is none, ask in chat: "วางโน้ตหรือ transcript ของ standup ได้เลย".
+- Input = notes or a transcript the user pasted (or a file path they gave). If there is none, ask in chat: "Paste the standup notes or transcript.".
 - Meeting date: from the text, else today. Show it in the confirm step.
 - Do not keep raw transcript text in tasks or notes; write short summaries.
 
 ## 4. Split per person
 
-1. `list_members` once. Map every speaker to a member by `displayName` or `name`. Names may be Thai or nicknames that differ from the member name (e.g. "Nok" = `nok`, "cream" = `creme`); also look at the names already used in "Daily Report: <name>" note titles. Unsure → ask ("<ชื่อ> คือใคร?" with up to 4 likely members).
-2. Per person: **เมื่อวาน** (done), **วันนี้** (plan), **ติดอะไร** (blockers). Empty → `-`.
+1. `list_members` once. Map every speaker to a member by `displayName` or `name`. Names may be Thai or nicknames that differ from the member name (e.g. "Nok" = `nok`, "cream" = `creme`); also look at the names already used in "Daily Report: <name>" note titles. Unsure → ask ("Who is <name>?" with up to 4 likely members).
+2. Per person: **Yesterday** (done), **Today** (plan), **Blockers**. Empty → `-`.
 
 ## 5. Match and plan task changes
 
@@ -42,14 +48,14 @@ Read `~/.claude/finalrex-report.json`. Needed: `workspace`, `board`, `rootNote`,
 3. Plan per the rules note:
    - **Progress said / work done** → update the task: `Progress`, `Status` from % (100 = Done, 1-99 = In Progress, 0 = Open), `Remark` (one line: what is left), `dueAt` = meeting day for work done that day. Never lower Progress unless the person said so.
    - **New work** with no matching task → create it under the related feature (`parentId`), `assigneeIds`, `startAt` = meeting day, Project (existing option only), Status, Progress, Remark.
-   - **Blocker** → its own task with Status **Open**, Progress 0, under the related feature, detail in Remark ("ติด: …, รอ …"). Reuse an existing open risk task with the same meaning.
+   - **Blocker** → its own task with Status **Open**, Progress 0, under the related feature, detail in Remark ("Blocked: …, waiting for …"). Reuse an existing open risk task with the same meaning.
    - **One subtask level.** If the related task is itself a subtask, use its parent as `parentId`. (Checked live: `batch_tasks` accepts a subtask under a subtask, so the skill must enforce this rule itself.)
    - Project with no fitting option → ask before anything else; never add an option.
 4. **Dry run.** `batch_tasks` with `dryRun: true`. Fix any error (an unknown option fails with the list of valid options).
 5. **Confirm once.** Show:
    - the per-person table (section 7) and
-   - the task changes: `สร้าง / อัพเดต: <title> — <Status> <N>% (ใต้ <parent>)`
-   and ask "ลง task และเขียนโน้ต Standup ตามนี้ไหม?". Do not write before the yes.
+   - the task changes: `Created / Updated: <title> — <Status> <N>% (under <parent>)`
+   and ask "Log these tasks and write the Standup note as listed?". Do not write before the yes.
 6. **Run** `batch_tasks` for real (create ops use `ref` so later ops can point at them). Then `list_tasks` again to verify; if the batch stopped partway, report which ops were applied and fix the rest.
 
 ## 6. Find or create the note
@@ -70,7 +76,7 @@ Read `~/.claude/finalrex-report.json`. Needed: `workspace`, `board`, `rootNote`,
 ## 7. Note body
 
 ```markdown
-| คน | เมื่อวาน | วันนี้ | ติดอะไร | Task ที่เกี่ยวข้อง |
+| Person | Yesterday | Today | Blockers | Related tasks |
 |---|---|---|---|---|
 | <name as in Daily Report titles> | <short> | <short> | <short or -> | <task titles exactly as on the board, comma separated> |
 ```
@@ -84,9 +90,9 @@ Read `~/.claude/finalrex-report.json`. Needed: `workspace`, `board`, `rootNote`,
 Short, in Thai:
 
 ```
-ลง standup แล้ว (dd/mm/yyyy)
-Task: สร้าง N, อัพเดต N, ความเสี่ยงใหม่ N
+Standup logged (dd/mm/yyyy)
+Tasks: N created, N updated, N new risks
 - <title> — <Status> <N>%
 Note: Monthly: MM/YYYY › Weekly: … › Daily: dd/mm/yyyy › **Standup: dd/mm/yyyy**
-ข้าม: <anything skipped and why>
+Skipped: <anything skipped and why>
 ```
