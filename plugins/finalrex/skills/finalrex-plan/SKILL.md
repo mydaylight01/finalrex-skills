@@ -7,12 +7,12 @@ description: Turn a request or spec (text, a file, or the current conversation) 
 
 Break a request into parent tasks and subtasks on the board, without duplicating existing work.
 
-Settings: `~/.claude/finalrex-report.json` (shared with `finalrex-report`). Ask every question with AskUserQuestion, in Thai. Talk to the user in Thai, short.
+Settings: `~/.claude/finalrex-report.json` (shared with `finalrex-report`). Ask every question with AskUserQuestion, in Thai. Talk to the user in Thai, short. Quoted English strings below are meant to be shown to the user: translate them to Thai when you say them.
 
 ## Names, not ids
 
 - In chat, AskUserQuestion questions and options, confirmations, dry-run summaries and reports, refer to workspaces, boards, views, tasks, notes, books, pages, atlases, nodes and people by name or title (plus the url a tool returns when linking). Never show raw ids / UUIDs unless the user asks for them.
-- Before every `mcp__finalrex__*` call, write one short Thai line saying what it will do in names and counts, e.g. "จะอ่านงาน 20 รายการจากบอร์ด Master Plan" or "จะสร้างหน้า 3 หน้าในหนังสือ คู่มือทีม", so the user understands the permission prompt, which shows raw ids.
+- Before every `mcp__finalrex__*` call, write one short Thai line saying what it will do in names and counts, e.g. "Will read 20 tasks from the board Master Plan" or "Will create 3 pages in the book Team Handbook", so the user understands the permission prompt, which shows raw ids.
 - Tool calls still pass ids / UUIDs exactly as before. If a name is not known yet, take it from an earlier `list_*` / `get_*` result (look it up first if cheap) instead of printing the id.
 
 ## 0. Connect FinalRex
@@ -32,14 +32,14 @@ Read `~/.claude/finalrex-report.json`. Needed: `workspace`, `board`, `rootNote`,
 
 ## 3. Get the request
 
-- Input: text in the message, a file path (read it), or "จากที่คุยกัน" (use the current conversation). Nothing given → ask in chat: "วาง requirement / spec หรือบอก path ไฟล์ได้เลย".
+- Input: text in the message, a file path (read it), or "from this conversation" (use the current conversation). Nothing given → ask in chat: "Paste the requirement / spec, or give a file path.".
 - Pull out: goal, deliverables, people named, dates or deadline, Project.
 
 ## 4. Check what exists
 
 1. `get_board` (fields, Project / Status options, `doneOptionIds`), `list_members` (names → user ids; names may be Thai or nicknames, ask if unsure).
 2. For each planned feature and piece, look for an existing task: `list_tasks` (`compact: true`, filter `{"field":"title","op":"contains","value":"<keyword>"}`; select filters take **option ids**) and `search` (kinds `task`) with 2-3 keywords each.
-3. Existing match → do not create it again. Use it as the parent for new pieces, or leave it as is and show it as "มีอยู่แล้ว". Unsure if it is the same work → ask.
+3. Existing match → do not create it again. Use it as the parent for new pieces, or leave it as is and show it as "already exists". Unsure if it is the same work → ask.
 
 ## 5. Plan
 
@@ -51,18 +51,18 @@ Read `~/.claude/finalrex-report.json`. Needed: `workspace`, `board`, `rootNote`,
 Show the plan as a table and ask for changes before the dry run is final:
 
 ```
-| # | Task | ใต้ | Project | ผู้ทำ | Start | Due | Remark |
+| # | Task | Under | Project | Assignee | Start | Due | Remark |
 |---|---|---|---|---|---|---|---|
 | 1 | <parent> | - | Gocprime | cream | 16/11 | 20/11 | ... |
 | 1.1 | <subtask> | 1 | Gocprime | Ky | 16/11 | 17/11 | ... |
 ```
 
-Also list "มีอยู่แล้ว (ไม่สร้างซ้ำ): <title>".
+Also list "Already exists (not created again): <title>".
 
 ## 6. Dry run, confirm once, run, verify
 
 1. `batch_tasks` with `dryRun: true`. Each new parent is a `create` op with a `ref`; its subtasks use that ref as `parentId`. Fix any error (an unknown option fails with the list of valid options).
-2. **Confirm once:** "สร้าง task ตามนี้ไหม? (parent N, subtask N)". Do not write before the yes.
+2. **Confirm once:** "Create these tasks? (N parents, N subtasks)". Do not write before the yes.
 3. Run `batch_tasks` for real with the same ops.
 4. Verify with `list_tasks` (`parentId` of each new parent, or a title filter). If the batch stopped partway, report which ops were applied and fix the rest without duplicating.
 
@@ -73,9 +73,9 @@ Also list "มีอยู่แล้ว (ไม่สร้างซ้ำ): <
 Short, in Thai:
 
 ```
-สร้าง task แล้ว (board <board name>)
-- <parent> — Open, <Project>, <ผู้ทำ>
-  - <subtask> — <ผู้ทำ>, due dd/mm
-มีอยู่แล้ว (ไม่สร้างซ้ำ): <title>
-ยังไม่มี: <missing assignees / dates>
+Tasks created (board <board name>)
+- <parent> — Open, <Project>, <assignee>
+  - <subtask> — <assignee>, due dd/mm
+Already exists (not created again): <title>
+Still missing: <missing assignees / dates>
 ```

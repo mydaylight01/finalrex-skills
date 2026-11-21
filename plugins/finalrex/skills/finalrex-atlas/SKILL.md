@@ -13,32 +13,32 @@ Settings: `~/.claude/finalrex-report.json` (shared with the other finalrex skill
 "atlas": { "id": "...", "title": "...", "workspace": "<slug or null for personal>" }
 ```
 
-Ask every question with AskUserQuestion, in Thai. Talk to the user in Thai, short.
+Ask every question with AskUserQuestion, in Thai. Talk to the user in Thai, short. Quoted English strings below are meant to be shown to the user: translate them to Thai when you say them.
 
 ## Names, not ids
 
 - In chat, AskUserQuestion questions and options, confirmations, dry-run summaries and reports, refer to workspaces, boards, views, tasks, notes, books, pages, atlases, nodes and people by name or title (plus the url a tool returns when linking). Never show raw ids / UUIDs unless the user asks for them.
-- Before every `mcp__finalrex__*` call, write one short Thai line saying what it will do in names and counts, e.g. "จะอ่านงาน 20 รายการจากบอร์ด Master Plan" or "จะสร้างหน้า 3 หน้าในหนังสือ คู่มือทีม", so the user understands the permission prompt, which shows raw ids.
+- Before every `mcp__finalrex__*` call, write one short Thai line saying what it will do in names and counts, e.g. "Will read 20 tasks from the board Master Plan" or "Will create 3 pages in the book Team Handbook", so the user understands the permission prompt, which shows raw ids.
 - Tool calls still pass ids / UUIDs exactly as before. If a name is not known yet, take it from an earlier `list_*` / `get_*` result (look it up first if cheap) instead of printing the id.
 
 ## 0. Connect FinalRex
 
 Look for `mcp__finalrex__*` tools (ToolSearch "+finalrex" if deferred). If none exist, stop and tell the user, in Thai, to run `claude mcp add --transport http --scope user finalrex https://api.finalrex.com/mcp`, then `/mcp` › finalrex › log in, and run the skill again. Auth error → tell them to sign in the same way. Never ask for tokens or passwords.
 
-**Brain.** Atlas needs FinalRex Brain to create one. If a call fails with 402 `limit_reached` (or says Brain / the `atlas` feature is needed), stop and say in Thai: "Atlas ต้องมี FinalRex Brain ให้เจ้าของบัญชีเปิด Brain ในหน้า plan ก่อน แล้วลองใหม่". A 402 on `atlas.editors.max` means the atlas has too many editors; tell the user and stop.
+**Brain.** Atlas needs FinalRex Brain to create one. If a call fails with 402 `limit_reached` (or says Brain / the `atlas` feature is needed), stop and say in Thai: "Atlas needs FinalRex Brain. Ask the account owner to turn on Brain on the plan page, then try again.". A 402 on `atlas.editors.max` means the atlas has too many editors; tell the user and stop.
 
 ## 1. Pick the atlas
 
 1. `list_atlases` (yours and the ones shared with you). If `workspace` is saved in the json, also `list_atlases` with that workspace slug. Keep only atlases whose `role` can edit (owner, manager, editor).
-2. Ask "จะวางลง atlas ไหน?":
-   - the saved `atlas` first, if it is still in the list — description: "ใช้ครั้งก่อน"
+2. Ask "Which atlas should I put this on?":
+   - the saved `atlas` first, if it is still in the list — description: "used last time"
    - up to 3 other atlases (label = title)
-3. **The connector cannot create an atlas.** None fits, or the user wants a new one → tell them in Thai: "สร้าง atlas ใหม่ในเว็บก่อน (เมนู Atlas › My atlases) แล้วสั่งใหม่หรือวางลิงก์ atlas มา" and stop. A pasted atlas link `/atlas/<id>` → use that id.
+3. **The connector cannot create an atlas.** None fits, or the user wants a new one → tell them in Thai: "Create a new atlas in the web app first (menu Atlas › My atlases), then run this again or paste the atlas link." and stop. A pasted atlas link `/atlas/<id>` → use that id.
 4. Save `atlas: { id, title, workspace }` in the json, keeping the other keys.
 
 ## 2. Get the plan
 
-- Input: text in the message, a file path (read it), or "จากที่คุยกัน" (use the current conversation). Nothing given → ask in chat: "วางแผน / ไอเดีย หรือบอก path ไฟล์ได้เลย".
+- Input: text in the message, a file path (read it), or "from this conversation" (use the current conversation). Nothing given → ask in chat: "Paste the plan / idea, or give a file path.".
 - Pull out: the goal, the main parts, the steps or ideas under each part, and how they relate (leads to, depends on, blocks, part of). Do not invent parts the plan does not have.
 
 ## 3. Read the atlas and find references
@@ -67,14 +67,14 @@ Show the plan:
 
 ```
 Atlas: <title>
-Card ใหม่
+New cards
 - [goal] <text> (x, y)
 - <text> (x, y)
-อ้างอิง (pin ของที่มีอยู่)
+References (pins to existing items)
 - task: <title> / note: <title> / page: <title>
-เส้นเชื่อม
+Links
 - <from> → <to> (<link type | label>)
-มีอยู่แล้ว (ไม่สร้างซ้ำ): <node>
+Already exists (not created again): <node>
 ```
 
 ## 5. Dry run, confirm once, run, verify
@@ -84,7 +84,7 @@ Card ใหม่
    - reference: `{"op":"create_node","ref":"t1","kind":"task","targetId":"<task id>","x":300,"y":200}`
    - edge: `{"op":"create_edge","from":"goal","to":"t1","linkTypeId":"<id or empty>","label":"..."}` (`from` / `to` = a ref or an existing node id)
    Fix any error (the whole batch is validated first; nothing is written when one op is invalid).
-2. **Confirm once:** show the list from step 4 and ask "วางลง atlas ตามนี้ไหม? (card N, อ้างอิง N, เส้น N)". Do not write before the yes.
+2. **Confirm once:** show the list from step 4 and ask "Put this on the atlas as listed? (N cards, N references, N links)". Do not write before the yes.
 3. Run `batch_atlas` for real with the same ops. It is one transaction: all or nothing. A version conflict → `get_atlas` again and rebuild the ops.
 4. Verify with `get_atlas`: the new nodes and edges are there.
 
@@ -95,8 +95,8 @@ Card ใหม่
 Short, in Thai. Use the url the tool returns; never build links yourself.
 
 ```
-วางลง atlas แล้ว
+Put on the atlas
 Atlas: <title> — <atlas url>
-- card ใหม่ N, อ้างอิง N (task N, note N, page N), เส้น N
-มีอยู่แล้ว (ไม่สร้างซ้ำ): <node>
+- N new cards, N references (N tasks, N notes, N pages), N links
+Already exists (not created again): <node>
 ```

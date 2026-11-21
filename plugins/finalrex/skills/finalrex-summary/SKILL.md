@@ -7,12 +7,12 @@ description: Write the Weekly and/or Monthly summary of the configured FinalRex 
 
 Build the Weekly and/or Monthly reports of the board from its tasks and the Daily Report notes of the period, then write them into the board note tree after one confirmation.
 
-Settings: `~/.claude/finalrex-report.json` (shared with `finalrex-report`). Ask every question with AskUserQuestion, in Thai. Talk to the user in Thai, short.
+Settings: `~/.claude/finalrex-report.json` (shared with `finalrex-report`). Ask every question with AskUserQuestion, in Thai. Talk to the user in Thai, short. Quoted English strings below are meant to be shown to the user: translate them to Thai when you say them.
 
 ## Names, not ids
 
 - In chat, AskUserQuestion questions and options, confirmations, dry-run summaries and reports, refer to workspaces, boards, views, tasks, notes, books, pages, atlases, nodes and people by name or title (plus the url a tool returns when linking). Never show raw ids / UUIDs unless the user asks for them.
-- Before every `mcp__finalrex__*` call, write one short Thai line saying what it will do in names and counts, e.g. "จะอ่านงาน 20 รายการจากบอร์ด Master Plan" or "จะสร้างหน้า 3 หน้าในหนังสือ คู่มือทีม", so the user understands the permission prompt, which shows raw ids.
+- Before every `mcp__finalrex__*` call, write one short Thai line saying what it will do in names and counts, e.g. "Will read 20 tasks from the board Master Plan" or "Will create 3 pages in the book Team Handbook", so the user understands the permission prompt, which shows raw ids.
 - Tool calls still pass ids / UUIDs exactly as before. If a name is not known yet, take it from an earlier `list_*` / `get_*` result (look it up first if cheap) instead of printing the id.
 
 ## 0. Connect FinalRex
@@ -34,12 +34,12 @@ Read `~/.claude/finalrex-report.json`. Needed: `workspace`, `board`, `rootNote`,
 
 Always ask, even if the user named it:
 
-1. "จะสรุปแบบไหน?" — Weekly / Monthly / ทั้งสองแบบ
+1. "Which summary?" — Weekly / Monthly / Both
 2. The period, per type chosen:
-   - Weekly: "สัปดาห์นี้ (dd/mm - dd/mm)" (Monday–Sunday, default) / "สัปดาห์ก่อน (dd/mm - dd/mm)"
-   - Monthly: "เดือนนี้ (MM/YYYY)" (default) / "เดือนก่อน (MM/YYYY)"
+   - Weekly: "This week (dd/mm - dd/mm)" (Monday–Sunday, default) / "Last week (dd/mm - dd/mm)"
+   - Monthly: "This month (MM/YYYY)" (default) / "Last month (MM/YYYY)"
 
-Check the rules note timing against today. If the chosen period may not be written yet (e.g. "Weekly อัพเดตได้ตั้งแต่วันจันทร์หลังจบสัปดาห์"), say so and ask: "สรุปช่วงก่อนหน้าแทน" / "ดูร่างในแชทอย่างเดียว (ไม่เขียนลงโน้ต)".
+Check the rules note timing against today. If the chosen period may not be written yet (e.g. "Weekly can be updated from the Monday after the week ends"), say so and ask: "Summarise the previous period instead" / "Show the draft in chat only (do not write to notes)".
 
 ## 4. Gather
 
@@ -56,7 +56,7 @@ Check the rules note timing against today. If the chosen period may not be writt
 Formats from the rules note (if it changes them, follow it):
 
 - **Weekly Report: <name>** / **Monthly Report: <name>**: `| Task | Project | Status | Progress | Remark |`, the person's tasks worked on in the period, Status / Progress / Remark as on the board now.
-- **Team summary Weekly** (body of the `Weekly: dd/mm - dd/mm` note): `| Task | Project | ผู้ทำ | Status | Progress |`.
+- **Team summary Weekly** (body of the `Weekly: dd/mm - dd/mm` note): `| Task | Project | Assignee | Status | Progress |`.
 - **Team summary Monthly** (body of the `Monthly: MM/YYYY` note): `| Feature | Project | Status | Progress |`, parent tasks (features) only, no names.
 
 Rules: task titles exactly as on the board; sort Project A→Z, then Progress high→low, non-% last (Hold / Close last within their Project); escape `|` as `\|`; Thai, short, no process noise. A week that spans two months counts only in the month its Weekly note sits under. Never count the same task twice in one table.
@@ -86,11 +86,11 @@ Steps:
 1. Match each target note by title **and** parent. Existing → update it; missing → create it (`create_note` with `boardId` for a Monthly, `parentId` for children). Never create a second note with the same title under the same parent.
    - A Monthly Report needs the month's `Monthly Reports` group: reuse it, or create it (empty body) before the report.
    - A "Monthly Report: <name>" found directly under the Monthly (old layout) → `move_note` it into the group; never re-create it.
-2. **Confirm once.** Show a short list and ask "เขียนตามนี้ไหม?":
+2. **Confirm once.** Show a short list and ask "Write this as listed?":
    ```
-   สร้าง: Monthly: 11/2026 › Weekly: 09/11 - 15/11 › Weekly Report: Pac (5 แถว)
-   สร้าง: Monthly: 11/2026 › Monthly Reports › Monthly Report: Pac (8 แถว)
-   อัพเดต: Weekly: 09/11 - 15/11 (สรุปทีม 18 แถว), Weekly Report: Gas (+2 แถว แก้ 3)
+   Create: Monthly: 11/2026 › Weekly: 09/11 - 15/11 › Weekly Report: Pac (5 rows)
+   Create: Monthly: 11/2026 › Monthly Reports › Monthly Report: Pac (8 rows)
+   Update: Weekly: 09/11 - 15/11 (team summary 18 rows), Weekly Report: Gas (+2 rows, 3 changed)
    ```
    Do not write before the yes. The user may ask to see a table first.
 3. **Write.** For an existing note: `get_note` for the current `version` and body, merge (update the row of the same task in place, add new rows, keep the sort, keep rows of other tasks and any text outside the table), then `update_note` with the whole body. For a new note: `list_notes` again right before `create_note` and reuse a note that appeared meanwhile. `create_note` puts a note last, so place every new or moved note right away: `move_note` with `afterNoteId` = the sibling it follows by the order above (`version` from the create result or `get_note`).
@@ -103,8 +103,8 @@ Steps:
 Short, in Thai:
 
 ```
-เขียนสรุปแล้ว (board <board name>)
-- Weekly 09/11 - 15/11: สรุปทีม (อัพเดต), Weekly Report: Gas, Nok, Pac (สร้าง 1 อัพเดต 2)
+Summary written (board <board name>)
+- Weekly 09/11 - 15/11: team summary (updated), Weekly Report: Gas, Nok, Pac (1 created, 2 updated)
 - Monthly 11/2026: …
-ข้าม: <what and why, e.g. Monthly ยังไม่ถึงเวลาตามกฎ>
+Skipped: <what and why, e.g. Monthly not due yet per the rules>
 ```

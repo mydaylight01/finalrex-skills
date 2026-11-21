@@ -1,18 +1,18 @@
 ---
 name: finalrex-status
-description: Read-only status of the configured FinalRex board (e.g. Master Plan) as tables - open and in-progress tasks, overdue, STUCK (no change for 3+ days), Hold, open risks - for me, a person, a project or the whole team. Never writes anything. Use when the user says /finalrex-status, "งานฉันค้างอะไร", "ทีมติดอะไร", "status โปรเจค X", "งานใครเลยกำหนด", "what's my status", "what is the team stuck on", "project status".
+description: Read-only status of the configured FinalRex board (e.g. Master Plan) as tables - open and in-progress tasks, overdue, STUCK (no change for 3+ days), Hold, open risks - for me, a person, a project or the whole team. Never writes anything. Use when the user says /finalrex-status, "งานฉันค้างอะไร", "ทีมติดอะไร", "status โปรเจค X", "งานใครOverdue", "what's my status", "what is the team stuck on", "project status".
 ---
 
 # FinalRex status (read-only)
 
 Answer "what is open / late / stuck" from the board. **This skill never writes**: no `create_*`, `update_*`, `move_*`, `delete_*` and no `batch_tasks` (not even a dry run). If the user asks for a change, tell them to use `finalrex-report`, `finalrex-standup` or `finalrex-plan`.
 
-Settings: `~/.claude/finalrex-report.json` (shared with `finalrex-report`). Ask every question with AskUserQuestion, in Thai. Answer in Thai, short.
+Settings: `~/.claude/finalrex-report.json` (shared with `finalrex-report`). Ask every question with AskUserQuestion, in Thai. Answer in Thai, short. Quoted English strings below are meant to be shown to the user: translate them to Thai when you say them.
 
 ## Names, not ids
 
 - In chat, AskUserQuestion questions and options, confirmations, dry-run summaries and reports, refer to workspaces, boards, views, tasks, notes, books, pages, atlases, nodes and people by name or title (plus the url a tool returns when linking). Never show raw ids / UUIDs unless the user asks for them.
-- Before every `mcp__finalrex__*` call, write one short Thai line saying what it will do in names and counts, e.g. "จะอ่านงาน 20 รายการจากบอร์ด Master Plan" or "จะสร้างหน้า 3 หน้าในหนังสือ คู่มือทีม", so the user understands the permission prompt, which shows raw ids.
+- Before every `mcp__finalrex__*` call, write one short Thai line saying what it will do in names and counts, e.g. "Will read 20 tasks from the board Master Plan" or "Will create 3 pages in the book Team Handbook", so the user understands the permission prompt, which shows raw ids.
 - Tool calls still pass ids / UUIDs exactly as before. If a name is not known yet, take it from an earlier `list_*` / `get_*` result (look it up first if cheap) instead of printing the id.
 
 ## 0. Connect FinalRex
@@ -32,7 +32,7 @@ Read `~/.claude/finalrex-report.json`. Needed: `workspace`, `board`, `rootNote`.
 
 ## 3. Scope
 
-From the user's words, pick one; ask only if unclear ("ดูของใคร?": ฉัน / คนอื่น / โปรเจค / ทั้งทีม):
+From the user's words, pick one; ask only if unclear ("Whose status?": me / another person / a project / the whole team):
 
 - **me** → `userId` from the json. If missing: `list_members`, match `displayName` or the `whoami` email, save `userId`.
 - **a person** → `list_members`; match the name to `displayName` or `name` (names may be Thai or nicknames that differ from report titles, e.g. "Nok" = `nok`, "cream" = `creme`). Ask if unsure.
@@ -57,47 +57,47 @@ A task can be in more than one table.
 
 | Table | Rule |
 |---|---|
-| ค้าง (Open / In Progress) | Status Open or In Progress |
-| เลยกำหนด | not done (Status not in `doneOptionIds`) and `due_at` day < today |
+| Pending (Open / In Progress) | Status Open or In Progress |
+| Overdue | not done (Status not in `doneOptionIds`) and `due_at` day < today |
 | STUCK | Open or In Progress and no change for 3 days or more (see below) |
 | Hold | Status Hold |
-| ความเสี่ยงที่เปิดอยู่ | Status Open (rules note: open risks = Open tasks), Progress 0 or empty |
+| Open risks | Status Open (rules note: open risks = Open tasks), Progress 0 or empty |
 
 **STUCK and "last change".** Checked live: `list_tasks`, `get_task` and `search` return **no updated time** for tasks (only `startAt` / `dueAt`). So use the best signal available:
 
 1. **Last report day**: the latest day the task title appears in a "Daily Report: …" or "Standup: …" note. Read only the last 3 days (today, -1, -2): `list_notes` with `workspace` (slug) **and** `boardId` (on an all-workspaces connection `list_notes` fails without `workspace`), find `Daily: dd/mm/yyyy` notes for those days, `get_note` each child report. A task named in any of them changed recently → not STUCK.
-2. Otherwise **`start_at`**: started within the last 3 days → not STUCK; started 3+ days ago → STUCK, "ไม่เคลื่อนตั้งแต่" = the last report day if seen, else `start_at`.
-3. No report and no `start_at` → not STUCK (age unknown); count them in one line under the tables ("ไม่มีวันที่ N งาน ตัดสินไม่ได้ว่าค้างหรือไม่").
+2. Otherwise **`start_at`**: started within the last 3 days → not STUCK; started 3+ days ago → STUCK, "No change since" = the last report day if seen, else `start_at`.
+3. No report and no `start_at` → not STUCK (age unknown); count them in one line under the tables ("N tasks have no date, cannot tell if they are stuck").
 
 If FinalRex later adds an updated time to tasks, use that instead and say so.
 
 ## 6. Show the answer
 
-Sort every table by the rules note sort rule: Project A→Z, then Progress high→low, rows without a % last (Hold / Close last within their Project). Escape `|` in cells as `\|`. Use task titles exactly as on the board. Skip an empty table and say "ไม่มี" in one line.
+Sort every table by the rules note sort rule: Project A→Z, then Progress high→low, rows without a % last (Hold / Close last within their Project). Escape `|` in cells as `\|`. Use task titles exactly as on the board. Skip an empty table and say "None" in one line.
 
 ```
-สถานะ <scope> — board <board name> (ณ dd/mm/yyyy)
+Status of <scope> — board <board name> (as of dd/mm/yyyy)
 
-สรุป: ค้าง N | เลยกำหนด N | STUCK N | Hold N | ความเสี่ยง N
+Summary: Pending N | Overdue N | STUCK N | Hold N | Risks N
 
-### เลยกำหนด
-| Task | Project | ผู้ทำ | Status | Progress | Due | เลยมา (วัน) |
+### Overdue
+| Task | Project | Assignee | Status | Progress | Due | Days overdue |
 
-### STUCK (ไม่ขยับ ≥ 3 วัน)
-| Task | Project | ผู้ทำ | Status | Progress | ไม่ขยับตั้งแต่ | Remark |
+### STUCK (no change for 3+ days)
+| Task | Project | Assignee | Status | Progress | No change since | Remark |
 
-### ค้าง (Open / In Progress)
-| Task | Project | ผู้ทำ | Status | Progress | Due | Remark |
+### Pending (Open / In Progress)
+| Task | Project | Assignee | Status | Progress | Due | Remark |
 
 ### Hold
-| Task | Project | ผู้ทำ | Remark |
+| Task | Project | Assignee | Remark |
 
-### ความเสี่ยงที่เปิดอยู่
-| Task | Project | ผู้ทำ | Remark |
+### Open risks
+| Task | Project | Assignee | Remark |
 ```
 
-- Scope "me": drop the ผู้ทำ column.
-- Whole team with many rows: show เลยกำหนด, STUCK and ความเสี่ยง in full, and the ค้าง table only on request ("ดูงานค้างทั้งหมดไหม?").
+- Scope "me": drop the Assignee column.
+- Whole team with many rows: show Overdue, STUCK and Open risks in full, and the Pending table only on request ("Show all pending tasks?").
 - End with one line on how STUCK was judged (report notes of the last 3 days + `start_at`, because tasks have no updated time).
 
 **Always:** read-only. No secrets or customer personal data in the answer beyond what is on the board.
