@@ -57,7 +57,7 @@ Formats from the rules note (if it changes them, follow it):
 
 - **Weekly Report: <name>** / **Monthly Report: <name>**: `| Task | Project | Status | Progress | Remark |`, the person's tasks worked on in the period, Status / Progress / Remark as on the board now.
 - **Team summary Weekly** (body of the `Weekly: dd/mm - dd/mm` note): `| Task | Project | Assignee | Status | Progress |`.
-- **Team summary Monthly** (body of the `Monthly: MM/YYYY` note): `| Feature | Project | Status | Progress |`, parent tasks (features) only, no names.
+- **Team summary Monthly** (body of the `Monthly: MM/YYYY` note): `| Feature | Project | Status | Progress |`, top-level tasks only (one task = one deliverable; subtasks are steps of a task and are left out; never a group task named after a date range), no names.
 
 Rules: task titles exactly as on the board; sort Project A→Z, then Progress high→low, non-% last (Hold / Close last within their Project); escape `|` as `\|`; Thai, short, no process noise. A week that spans two months counts only in the month its Weekly note sits under. Never count the same task twice in one table.
 

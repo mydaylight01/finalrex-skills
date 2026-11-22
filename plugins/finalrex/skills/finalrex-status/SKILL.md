@@ -49,7 +49,7 @@ From the user's words, pick one; ask only if unclear ("Whose status?": me / anot
    - dates in a filter: `due_at`, `start_at` (e.g. `{"field":"due_at","op":"lt","value":"<today>T00:00:00Z"}`)
    - the `fields` parameter takes the names as they come back: `Status`, `Progress`, `Project`, `Remark`, `table.col.assignee`, `table.col.start_at`, `table.col.due_at`. Empty values are left out of the result.
 3. `list_members` once to turn assignee ids into names.
-4. For a parent title (feature) of a subtask, use the `parentId` and the parent row from the same list (`get_task` only if the parent is not in it).
+4. For the task a subtask is a step of, use the `parentId` and the parent row from the same list (`get_task` only if the parent is not in it). Add `Type` to `fields` when the board has a Type field.
 
 ## 5. Classify (today = local date)
 
@@ -61,7 +61,7 @@ A task can be in more than one table.
 | Overdue | not done (Status not in `doneOptionIds`) and `due_at` day < today |
 | STUCK | Open or In Progress and no change for 3 days or more (see below) |
 | Hold | Status Hold |
-| Open risks | Status Open (rules note: open risks = Open tasks), Progress 0 or empty |
+| Open risks | Type Risk and not done (rules note: open risks = Type Risk tasks, linked Risk of to what they concern; `get_task` shows that link). Board without a Type field: Status Open, Progress 0 or empty |
 
 **STUCK and "last change".** Checked live: `list_tasks`, `get_task` and `search` return **no updated time** for tasks (only `startAt` / `dueAt`). So use the best signal available:
 

@@ -1,6 +1,6 @@
 ---
 name: finalrex-standup
-description: Record a standup meeting on the configured FinalRex board (e.g. Master Plan) - split pasted notes or a transcript per person into yesterday / today / blockers, update or create the matching tasks (blockers become Open risk tasks) with one confirmation, and write the "Standup: dd/mm/yyyy" note under that day's Daily note. Use when the user says /finalrex-standup, "บันทึก standup", "ลง standup", "จด daily standup", "สรุปประชุม standup", "record standup", "standup notes".
+description: Record a standup meeting on the configured FinalRex board (e.g. Master Plan) - split pasted notes or a transcript per person into yesterday / today / blockers, update or create the matching tasks (blockers become Open Risk tasks linked to what they block) with one confirmation, and write the "Standup: dd/mm/yyyy" note under that day's Daily note. Use when the user says /finalrex-standup, "บันทึก standup", "ลง standup", "จด daily standup", "สรุปประชุม standup", "record standup", "standup notes".
 ---
 
 # FinalRex standup
@@ -28,7 +28,7 @@ Read `~/.claude/finalrex-report.json`. Needed: `workspace`, `board`, `rootNote`,
 
 ## 2. Read the rules
 
-`get_note` the rules note (`rootNote`). Its "FOR AI" section wins over this skill: task rules (find before create, one subtask level, required fields, Status from %), open risks = Open tasks, note tree, no duplicates.
+`get_note` the rules note (`rootNote`). Its "FOR AI" section wins over this skill: task rules (find before create, one task per deliverable, Project + Type on every task, subtasks only for steps of the same task, relations as links, required fields, Status from %), open risks = Type Risk tasks linked Risk of, note tree, no duplicates.
 
 ## 3. Get the standup
 
@@ -43,20 +43,21 @@ Read `~/.claude/finalrex-report.json`. Needed: `workspace`, `board`, `rootNote`,
 
 ## 5. Match and plan task changes
 
-1. `get_board` for fields and option labels, `doneOptionIds`.
+1. `get_board` for fields and option labels (Status, Project, Type), `doneOptionIds`. `list_link_types` for the workspace's link types (built-in: blocks, relates).
 2. Find existing tasks for each item: `list_tasks` (`compact: true`, filter `{"field":"title","op":"contains","value":"…"}`, or `{"field":"assignee","op":"in","value":["<userId>"]}` with Status not done — select filters take **option ids**) and/or `search` (kinds `task`). Prefer the person's own open tasks.
 3. Plan per the rules note:
    - **Progress said / work done** → update the task: `Progress`, `Status` from % (100 = Done, 1-99 = In Progress, 0 = Open), `Remark` (one line: what is left), `dueAt` = meeting day for work done that day. Never lower Progress unless the person said so.
-   - **New work** with no matching task → create it under the related feature (`parentId`), `assigneeIds`, `startAt` = meeting day, Project (existing option only), Status, Progress, Remark.
-   - **Blocker** → its own task with Status **Open**, Progress 0, under the related feature, detail in Remark ("Blocked: …, waiting for …"). Reuse an existing open risk task with the same meaning.
+   - **New work** with no matching task → a new top-level task, one per deliverable (never one title joining several things with "+"; never a group task for the meeting or the day), with `assigneeIds`, `startAt` = meeting day, Project, Type, Status, Progress, Remark. Only when it is a step of an existing task (its spec, test, meeting/decision, CR / ER, leftovers) → create it as a subtask of that task (`parentId`).
+   - **Blocker** → a task with Type **Risk**, Status **Open**, Progress 0, top-level, linked **Risk of** to the task it blocks, detail in Remark ("Blocked: …, waiting for …"). Reuse an existing open Risk task with the same meaning.
+   - **Links** only from what was said: "X waits for Y" → Y blocks X; otherwise relates or a custom link type by name from `list_link_types`. Never guess.
    - **One subtask level.** If the related task is itself a subtask, use its parent as `parentId`. (Checked live: `batch_tasks` accepts a subtask under a subtask, so the skill must enforce this rule itself.)
-   - Project with no fitting option → ask before anything else; never add an option.
-4. **Dry run.** `batch_tasks` with `dryRun: true`. Fix any error (an unknown option fails with the list of valid options).
+   - Project or Type with no fitting option → ask before anything else; never add an option.
+4. **Dry run.** `batch_tasks` with `dryRun: true`, links included as `link` ops (from / to may be refs of tasks created in the same batch). Fix any error (an unknown option fails with the list of valid options).
 5. **Confirm once.** Show:
    - the per-person table (section 7) and
-   - the task changes: `Created / Updated: <title> — <Status> <N>% (under <parent>)`
+   - the task changes: `Created / Updated: <title> — <Type>, <Status> <N>%` (add "(step of <task>)" for a subtask) and the links as `<task> → <link type> → <task>`
    and ask "Log these tasks and write the Standup note as listed?". Do not write before the yes.
-6. **Run** `batch_tasks` for real (create ops use `ref` so later ops can point at them). Then `list_tasks` again to verify; if the batch stopped partway, report which ops were applied and fix the rest.
+6. **Run** `batch_tasks` for real (create ops use `ref` so later ops and links can point at them). If the connector's `batch_tasks` has no `link` op, create the tasks first, then each link with `create_task_link`. Then `list_tasks` again (and `get_task` for linked tasks) to verify; if the batch stopped partway, report which ops were applied and fix the rest.
 
 ## 6. Find or create the note
 
