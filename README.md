@@ -90,7 +90,7 @@ claude plugin list
 | `finalrex-status` | Read-only: open, overdue, stuck, Hold and open-risk tasks for you, a person, a project or the team. Say `/finalrex-status` or "งานฉันค้างอะไร". |
 | `finalrex-book` | Turns a topic, a file or the conversation into Book pages (drafts, never published), updating existing pages instead of duplicating. Needs FinalRex Brain to create a book. Say `/finalrex-book` or "เขียนลง book". |
 | `finalrex-atlas` | Lays a plan out on an Atlas: cards, links, and existing book pages / notes / tasks pinned as references, without overlaps. The atlas must exist (create it in the web app). Needs FinalRex Brain. Say `/finalrex-atlas` or "วาง atlas". |
-| `finalrex-kpi` | Planned (on hold until the FinalRex MCP has KPI tools). See [ROADMAP.md](ROADMAP.md). |
+| `finalrex-kpi` | Defines and runs KPIs for a board (Business plan and up): checks what the board can measure, offers existing KPIs first, dry-runs before saving, asks again before an exact duplicate, deletes only on your explicit yes. Say `/finalrex-kpi` or "สร้าง KPI". |
 
 The board skills (report, summary, standup, plan, status) read the rules note on your board first; its rules win over the skill text.
 Skills that write show a dry run and ask once before writing.
